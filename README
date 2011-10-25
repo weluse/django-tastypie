@@ -7,6 +7,20 @@ Creating delicious APIs for Django apps since 2010.
 Currently in beta (v1.0.0-beta) but being used actively in production on several
 sites.
 
+Differences between this patched version and Django Tastypie
+============================================================
+
+This version includes three patches that have been submitted as pull requests
+to the creators of Django Tastypie:
+
+* 6bf187d > if an Error 500 occurs, the message of the exception is shown in 
+  the error description, instead of a generic 'This request could not be 
+  processed'.
+* 18d7a90 > when using Django's DummyCache, CacheThrottle does not fail
+* 1fbc0a8 > allows file uploads (attachments) on POST requests
+
+Once these patches are included in the source repository, this fork will not
+be required anymore.
 
 Requirements
 ============
