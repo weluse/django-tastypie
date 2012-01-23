@@ -41,6 +41,11 @@ except ImportError:
         return func
 
 
+class NOT_AVAILABLE:
+    def __str__(self):
+        return 'No such data is available.'
+
+
 class ResourceOptions(object):
     """
     A configuration class for ``Resource``.
@@ -794,6 +799,12 @@ class Resource(object):
                 'help_text': field_object.help_text,
                 'unique': field_object.unique,
             }
+            if field_object.dehydrated_type == 'related':
+                if getattr(field_object, 'is_m2m', False):
+                    related_type = 'to_many'
+                else:
+                    related_type = 'to_one'
+                data['fields'][field_name]['related_type'] = related_type
 
         return data
 
@@ -1806,15 +1817,20 @@ class ModelResource(Resource):
                 bundle.data.update(kwargs)
                 bundle = self.full_hydrate(bundle)
                 lookup_kwargs = kwargs.copy()
-                lookup_kwargs.update(dict(
-                    (k, getattr(bundle.obj, k))
-                    for k in kwargs.keys()
-                    if getattr(bundle.obj, k) is not None))
+
+                for key in kwargs.keys():
+                    if key == 'pk':
+                        continue
+                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
+                        lookup_kwargs[key] = getattr(bundle.obj, key)
+                    else:
+                        del lookup_kwargs[key]
             except:
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
                 # and this will work fine.
                 lookup_kwargs = kwargs
+
             try:
                 bundle.obj = self.obj_get(request, **lookup_kwargs)
             except ObjectDoesNotExist:
@@ -2007,7 +2023,6 @@ def convert_post_to_VERB(request, verb):
             request.META['REQUEST_METHOD'] = 'POST'
             request._load_post_and_files()
             request.META['REQUEST_METHOD'] = verb
-
         setattr(request, verb, request.POST)
 
     return request
